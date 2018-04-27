@@ -6,7 +6,7 @@ reconstruction algorithms. Note that the GPU Nvidia card is required to use the 
 
 ## General software prerequisites
  * [MATLAB](http://www.mathworks.com/products/matlab/) 
- * C compilers and nvcc (CUDA SDK) compilers
+ * C compilers and nvcc [CUDA SDK](https://developer.nvidia.com/cuda-downloads) compilers
  * [ASTRA-toolbox](https://www.astra-toolbox.com/) 
  
 ## Software dependencies for data generation script: 
@@ -22,9 +22,9 @@ reconstruction algorithms. Note that the GPU Nvidia card is required to use the 
  
 ## Package contents:
  * SpectralData_generation_demo.m - script to generate data
- * SpectralData_noCrime.mat - pre-generated data using the script above
+ * SpectralData_noCrime.mat - pre-generated data obtained with the script above
  * SpectralReconDemo.m - script to perform reconstruction of generated data
- * FISTA_REC_rct.m - main reconstruction function
+ * FISTA_REC_rct.m - main reconstruction function (FISTA algorithm)
 
 ### References:
  * Kazantsev D., Jørgensen J.S., Andersen M., Lionheart W.R., Lee P.D. and Withers P.J., 2018. Joint image reconstruction method with correlative multi-channel prior for X-ray spectral computed tomography. Inverse Problems. 

@@ -6,17 +6,17 @@ Here we provide detailed installation information for the following dependencies
 
 ## Software dependencies for data generation script (NOTE that the pre-generated data are also provided so one can proceed directly to the reconstruction stage if needed): 
  * [Photon Attenuation](https://uk.mathworks.com/matlabcentral/fileexchange/12092-photonattenuation) 
- ---------- No installation is required, just unzip the content into "SupplementaryPackages/PhotonAttenuation/"
+ ---------- No installation is required, just uncompress the content into "SupplementaryPackages/PhotonAttenuation/"
  * [Spektr](http://istar.jhu.edu/downloads/) 
- ---------- No installation is required, just unzip the content into "SupplementaryPackages/spektr/"
+ ---------- No installation is required, just uncompress the content into "SupplementaryPackages/spektr/"
 
 ## Software dependencies for data reconstruction script: 
  * [CCPi-Regularisation Toolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit)
----------- Unzip the content into "SupplementaryPackages/CCPi-RegularisationToolkit/". 
+---------- uncompress the content into "SupplementaryPackages/CCPi-RegularisationToolkit/". 
 1. Start matlab and proceed to the folder "CCPi-RegularisationToolkit/Wrappers/Matlab/mex_compile/"
 2. run compileCPU_mex.m to compile CPU functions
 3. open compileGPU_mex.m and edit according to your system specifications
 4. run compileGPU_mex.m to compile GPU functions
 Note that one can use only CPU modules if GPU modules can't be installed. See more in the script "SpectralReconDemo.m"
  * [Spot operator package](http://www.cs.ubc.ca/labs/scl/spot/) 
- ---------- No installation is required, just unzip the content into "SupplementaryPackages/spot/"
+ ---------- No installation is required, just uncompress the content into "SupplementaryPackages/spot/"
