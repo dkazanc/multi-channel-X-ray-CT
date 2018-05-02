@@ -7,6 +7,7 @@ Here we provide detailed installation information for the following dependencies
 ## Software dependencies for data generation script (NOTE that the pre-generated data are also provided so one can proceed directly to the reconstruction stage if needed): 
  * [Photon Attenuation](https://uk.mathworks.com/matlabcentral/fileexchange/12092-photonattenuation) 
  ---------- No installation is required, just uncompress the content into "SupplementaryPackages/PhotonAttenuation/"
+ NOTE: please see the issue https://github.com/dkazanc/multi-channel-X-ray-CT/issues/1 to correct a bug in Software
  * [Spektr](http://istar.jhu.edu/downloads/) 
  ---------- No installation is required, just uncompress the content into "SupplementaryPackages/spektr/"
 
