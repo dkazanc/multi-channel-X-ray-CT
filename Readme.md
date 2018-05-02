@@ -1,8 +1,6 @@
 # Joint image reconstruction method with correlative multi-channel prior for X-ray spectral computed tomography (SOFTWARE)
 
-**The presented software reproduce the numerical results of Inverse Problem [paper](https://doi.org/10.1088/1361-6420/aaba86). Software generate realisitc 
-sythetic multi-energetic tomographic projection data and reconstruct it. Novel correlative multi-channel algorithm compared with other state-of-the-art 
-reconstruction algorithms. Note that the GPU Nvidia card is required to use the software.** 
+**The presented software reproduces numerical results of Inverse Problems journal [paper](https://doi.org/10.1088/1361-6420/aaba86). Software generates realisitc sythetic multi-energetic tomographic projection data and reconstruct it. Novel correlative multi-channel algorithm compared with other state-of-the-art reconstruction algorithms. Note that a GPU (Nvidia) card is required to use the software.** 
 
 ## General software prerequisites
  * [MATLAB](http://www.mathworks.com/products/matlab/) 
@@ -17,8 +15,9 @@ reconstruction algorithms. Note that the GPU Nvidia card is required to use the 
  * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit)
  * [Spot operator package](http://www.cs.ubc.ca/labs/scl/spot/)
 
-## Installation:
+## Installation and known Issues:
  * See INSTALLATION file for detailed recommendations
+ * There is an [issue](https://github.com/dkazanc/multi-channel-X-ray-CT/issues/1) related to Photon Attenuation software
  
 ## Package contents:
  * SpectralData_generation_demo.m - script to generate data
