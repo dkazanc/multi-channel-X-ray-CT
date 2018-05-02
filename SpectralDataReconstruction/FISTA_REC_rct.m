@@ -60,7 +60,7 @@ else
     for k = 1:niter
         xtmp = bsxfun(@rdivide,A'*(W.*(A*xtmp)),sqrt(sum(xtmp.^2)));
     end
-    L_const = min(sqrt(sum(xtmp.^2)));
+    L_const = max(sqrt(sum(xtmp.^2)));
     clear xtmp;
 end
 if (isfield(params,'iterFISTA'))
@@ -183,7 +183,7 @@ for i = 1:iterFISTA
             for jj = 1:num_channels
                 X_resh = reshape(single(X(:,jj)), N,N);
                 % FGP-TV minimization subproblem
-                lambda_reg = lambda/L_const(jj);
+                lambda_reg = lambda/L_const;
                 if (strcmp('true', REG_GPU) == 1)
                     % GPU version
                     X_den = FGP_TV_GPU(single(X_resh), lambda_reg, Iter_InnerProx, tol, 'iso', nonneg, REG_print);                    
@@ -191,7 +191,7 @@ for i = 1:iterFISTA
                     % CPU version
                     X_den = FGP_TV(X_resh, lambda_reg, Iter_InnerProx, tol, 'iso', nonneg, REG_print);             
                 end
-            f_val = TV_energy(X_den, X_resh, lambda(jj), 2);  % get energy function of the TV penalty
+            f_val = TV_energy(X_den, X_resh, lambda, 2);  % get energy function of the TV penalty
             % Store the updated objective value 
             obj_func_value(i,jj) = obj_func_value_temp + f_val;
             X(:,jj) = reshape(X_den, n_vox, 1);

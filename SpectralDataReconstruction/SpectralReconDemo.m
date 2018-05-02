@@ -14,6 +14,9 @@ load(sprintf(['..' filesep 'SpectralDataGeneration' filesep 'SpectralData_noCrim
 % adding paths
 addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep], 1i));
 addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'CCPi-RegularisationToolkit' filesep 'Wrappers' filesep 'Matlab' filesep 'mex_compile' filesep 'installed' filesep], 1i));
+addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'PhotonAttenuation' filesep], 1i));
+addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'spot' filesep], 1i));
+addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'gendist' filesep], 1i));
 
 % Set the geometry
 B = -log(bsxfun(@times, Y+(Y==0), 1./sb'));
@@ -104,7 +107,7 @@ params.channel = 3; % selected channel to vis and plot RMSE error
 params.ROI = ROI; % phantom region-of-interest
 [X_TV, outputTV] = FISTA_REC_rct(params);
 figure (2);
-subplot(1,3,1); imshow(reshape(X_TV(:,params.channel), n, n), [0 0.25*max(Phantom_nbins(:,params.channel))]); title('FISTA-TV reconstruction of a selected channel');
+subplot(1,3,1); imshow(reshape(X_TV(:,params.channel), n, n), [0 0.1*max(Phantom_nbins(:,params.channel))]); title('FISTA-TV reconstruction of a selected channel');
 subplot(1,3,2); plot((outputTV.RMSE(:,params.channel))); title('RMSE error of a selected channel');
 subplot(1,3,3); plot((outputTV.obj_func(:,params.channel))); title('Energy functional of a selected channel');
 %%
@@ -129,33 +132,33 @@ params.channel = 3; % selected channel to vis and plot RMSE error
 params.ROI = ROI; % phantom region-of-interest
 [X_dTV_geom, outputdTV_geom] = FISTA_REC_rct(params);
 figure (3);
-subplot(1,3,1); imshow(reshape(X_dTV_geom(:,params.channel), n, n), [0 0.25*max(Phantom_nbins(:,params.channel))]); title('FISTA-dTVp reconstruction of a selected channel');
+subplot(1,3,1); imshow(reshape(X_dTV_geom(:,params.channel), n, n), [0 0.1*max(Phantom_nbins(:,params.channel))]); title('FISTA-dTVp reconstruction of a selected channel');
 subplot(1,3,2); plot((outputdTV_geom.RMSE(:,params.channel))); title('RMSE error of a selected channel');
 subplot(1,3,3); plot((outputdTV_geom.obj_func(:,params.channel))); title('Energy functional of a selected channel');
 %%
-fprintf('%s \n', 'PWLS-dTV-d channel correlated (selection Mean k-2:k+2) reconstruction using FISTA');
-lambda_dTV_mean = 0.005;
-ROI = find((Phantom_nbins(:,1) >= 0));
-clear params
-params.Amatrix = A; % projection matrix (opTomo operator)
-params.sino = sino; % sinogram (vectorized)
-params.iterFISTA = 250; %max number of outer iterations
-params.REG_method = 'dTV_mean'; % regularization method
-params.REG_parameter = lambda_dTV_mean; % dTVd - regularization parameter
-params.REG_smooth_eta = 0.01; % value to regularise the gradient of the reference image
-params.REG_iteration = 50;  
-params.REG_GPU = 'true'; %GPU option
-% params.REG_print = 1; % uncomment to see the response of the FGP-TV routine
-% params.nonneg = 1; % uncomment to add nonnegativity
-params.weights = W; % weights for the PWLS model
-params.phantom = Phantom_nbins; % ground truth phantom
-params.channel = 3; % selected channel to vis and plot RMSE error
-params.ROI = ROI; % phantom region-of-interest
-[X_dTV_mean, outputdTV_mean] = FISTA_REC_rct(params);
-figure (4);
-subplot(1,3,1); imshow(reshape(X_dTV_mean(:,params.channel), n, n), [0 0.25*max(Phantom_nbins(:,params.channel))]);  title('FISTA-dTVd reconstruction of a selected channel');
-subplot(1,3,2); plot((outputdTV_mean.RMSE(:,params.channel))); title('RMSE error of a selected channel');
-subplot(1,3,3); plot((outputdTV_mean.obj_func(:,params.channel))); title('Energy functional of a selected channel');
+% fprintf('%s \n', 'PWLS-dTV-d channel correlated (selection Mean k-2:k+2) reconstruction using FISTA');
+% lambda_dTV_mean = 0.005;
+% ROI = find((Phantom_nbins(:,1) >= 0));
+% clear params
+% params.Amatrix = A; % projection matrix (opTomo operator)
+% params.sino = sino; % sinogram (vectorized)
+% params.iterFISTA = 250; %max number of outer iterations
+% params.REG_method = 'dTV_mean'; % regularization method
+% params.REG_parameter = lambda_dTV_mean; % dTVd - regularization parameter
+% params.REG_smooth_eta = 0.01; % value to regularise the gradient of the reference image
+% params.REG_iteration = 50;  
+% params.REG_GPU = 'true'; %GPU option
+% % params.REG_print = 1; % uncomment to see the response of the FGP-TV routine
+% % params.nonneg = 1; % uncomment to add nonnegativity
+% params.weights = W; % weights for the PWLS model
+% params.phantom = Phantom_nbins; % ground truth phantom
+% params.channel = 3; % selected channel to vis and plot RMSE error
+% params.ROI = ROI; % phantom region-of-interest
+% [X_dTV_mean, outputdTV_mean] = FISTA_REC_rct(params);
+% figure (4);
+% subplot(1,3,1); imshow(reshape(X_dTV_mean(:,params.channel), n, n), [0 0.1*max(Phantom_nbins(:,params.channel))]);  title('FISTA-dTVd reconstruction of a selected channel');
+% subplot(1,3,2); plot((outputdTV_mean.RMSE(:,params.channel))); title('RMSE error of a selected channel');
+% subplot(1,3,3); plot((outputdTV_mean.obj_func(:,params.channel))); title('Energy functional of a selected channel');
 %%
 fprintf('%s \n', 'PWLS-TNV reconstruction using FISTA');
 lambdaTNV = 0.0005;
@@ -175,6 +178,6 @@ params.channel = 3; % selected channel to vis and plot RMSE error
 params.ROI = ROI; % phantom region-of-interest
 [X_TNV, outputTNV] = FISTA_REC_rct(params);
 figure (5);
-subplot(1,2,1); imshow(reshape(X_TNV(:,params.channel), n, n), [0 0.25*max(Phantom_nbins(:,params.channel))]); title('FISTA-TNV reconstruction of a selected channel');
+subplot(1,2,1); imshow(reshape(X_TNV(:,params.channel), n, n), [0 0.1*max(Phantom_nbins(:,params.channel))]); title('FISTA-TNV reconstruction of a selected channel');
 subplot(1,2,2); plot((outputTNV.RMSE(:,params.channel))); title('RMSE error of a selected channel');
 %%
