@@ -1,6 +1,6 @@
 # Joint image reconstruction method with correlative multi-channel prior for X-ray spectral computed tomography (SOFTWARE)
 
-**The presented software reproduces numerical results of Inverse Problems journal [paper](https://doi.org/10.1088/1361-6420/aaba86). Software generates realisitc sythetic multi-energetic tomographic projection data and reconstruct it. Novel correlative multi-channel algorithm compared with other state-of-the-art reconstruction algorithms. Note that a GPU (Nvidia) card is required to use the software.** 
+**The presented software reproduces numerical results of Inverse Problems journal [paper](https://doi.org/10.1088/1361-6420/aaba86). Software generates realisitic synthetic multi-energetic tomographic projection data and reconstructs it. Novel prior-correlative multi-channel algorithm is compared with other state-of-the-art reconstruction algorithms. Note that a GPU (Nvidia) card is required to use the software.** 
 
 ## General software prerequisites
  * [MATLAB](http://www.mathworks.com/products/matlab/) 
@@ -26,7 +26,8 @@
  * FISTA_REC_rct.m - main reconstruction function (FISTA algorithm)
 
 ### References:
- * Kazantsev D., Jørgensen J.S., Andersen M., Lionheart W.R., Lee P.D. and Withers P.J., 2018. Joint image reconstruction method with correlative multi-channel prior for X-ray spectral computed tomography. Inverse Problems. 
+ * [Kazantsev D., Jørgensen J.S., Andersen M., Lionheart W.R., Lee P.D. and Withers P.J., 2018. Joint image reconstruction method with correlative multi-channel prior for X-ray spectral computed tomography. Inverse Problems](https://doi.org/10.1088/1361-6420/aaba86)
+ * [SIAM 2018 presentation](https://github.com/dkazanc/multi-channel-X-ray-CT/blob/master/docs/SIAM_Kazantsev18.pdf)
  
 ### License:
 GNU GENERAL PUBLIC LICENSE v.3
