@@ -14,7 +14,7 @@ Here we provide detailed installation information for the following dependencies
 ## Software dependencies for data reconstruction script: 
  * [CCPi-Regularisation Toolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit)
 ---------- uncompress the content into "SupplementaryPackages/CCPi-RegularisationToolkit/". 
-1. Start matlab and proceed to the folder "CCPi-RegularisationToolkit/Wrappers/Matlab/mex_compile/"
+1. Start matlab and proceed to the folder "CCPi-RegularisationToolkit/src/Matlab/mex_compile/"
 2. run compileCPU_mex.m to compile CPU functions
 3. open compileGPU_mex.m and edit according to your system specifications
 4. run compileGPU_mex.m to compile GPU functions

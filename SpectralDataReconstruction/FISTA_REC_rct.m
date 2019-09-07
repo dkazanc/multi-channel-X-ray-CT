@@ -88,11 +88,6 @@ if (isfield(params,'REG_iteration'))
 else
     Iter_InnerProx = 150;
 end
-if (isfield(params,'REG_print'))
-    REG_print = params.REG_print;
-else
-    REG_print = 0;
-end
 if (isfield(params,'REG_method'))
     if (strcmp('TV',params.REG_method) == 1)
         fprintf('%s \n', 'FISTA-TV reconstruction method is selected');
@@ -128,11 +123,6 @@ if (isfield(params,'ROI'))
     ROI = params.ROI;
 else
     ROI = find(X(:,1)>=0);
-end
-if (isfield(params,'nonneg'))
-    nonneg = params.nonneg;
-else
-    nonneg = 0;
 end
 if (isfield(params,'probability'))
     probability = params.probability;
@@ -186,10 +176,10 @@ for i = 1:iterFISTA
                 lambda_reg = lambda/L_const;
                 if (strcmp('true', REG_GPU) == 1)
                     % GPU version
-                    X_den = FGP_TV_GPU(single(X_resh), lambda_reg, Iter_InnerProx, tol, 'iso', nonneg, REG_print);                    
+                    [X_den,infovec] = FGP_TV_GPU(single(X_resh), lambda_reg, Iter_InnerProx, tol);                    
                 else
                     % CPU version
-                    X_den = FGP_TV(X_resh, lambda_reg, Iter_InnerProx, tol, 'iso', nonneg, REG_print);             
+                    [X_den,infovec] = FGP_TV(single(X_resh), lambda_reg, Iter_InnerProx, tol);                         
                 end
             f_val = TV_energy(X_den, X_resh, lambda, 2);  % get energy function of the TV penalty
             % Store the updated objective value 
@@ -207,10 +197,10 @@ for i = 1:iterFISTA
                 X_resh = reshape(single(X(:,jj)), N,N);                
                 if (strcmp('true', REG_GPU) == 1)
                     % GPU version
-                    X_den = FGP_dTV_GPU(single(X_resh), single(supp_channel), lambda_reg, Iter_InnerProx, tol, eta_val, 'iso', nonneg, REG_print);  
+                    [X_den,infovec] = FGP_dTV_GPU(single(X_resh), single(supp_channel), lambda_reg, Iter_InnerProx, tol, eta_val);  
                 else
                     % CPU version
-                    X_den = FGP_dTV(single(X_resh), single(supp_channel), lambda_reg, Iter_InnerProx, tol, eta_val, 'iso', nonneg, REG_print);  
+                    [X_den,infovec] = FGP_dTV(single(X_resh), single(supp_channel), lambda_reg, Iter_InnerProx, tol, eta_val);  
                 end
             f_val = TV_energy(X_den, X_resh, lambda, 2);  % get energy function of the TV penalty
             % Store the updated objective value 
@@ -236,10 +226,10 @@ for i = 1:iterFISTA
                 X_resh = reshape(single(X(:,jj)), N,N); 
                 if (strcmp('true', REG_GPU) == 1)
                     % GPU version
-                    X_den = FGP_dTV_GPU(single(X_resh), single(supp_channel), lambda_reg, Iter_InnerProx, tol, eta_val, 'iso', nonneg, REG_print);
+                    [X_den,infovec] = FGP_dTV_GPU(single(X_resh), single(supp_channel), lambda_reg, Iter_InnerProx, tol, eta_val);
                 else
                     % CPU version                    
-                    X_den = FGP_dTV(single(X_resh), single(supp_channel), lambda_reg, Iter_InnerProx, tol, eta_val, 'iso', nonneg, REG_print);  
+                    [X_den,infovec] = FGP_dTV(single(X_resh), single(supp_channel), lambda_reg, Iter_InnerProx, tol, eta_val);  
                 end
             f_val = TV_energy(X_den, X_resh, lambda, 2);  % get energy function of the TV penalty
             % Store the updated objective value 
