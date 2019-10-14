@@ -6,65 +6,45 @@ addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'spektr' filesep],
 addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'spot' filesep], 1i));
 addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'PhotonAttenuation' filesep], 1i));
 
-pathtodata = '/media/algol/F2FE9B0BFE9AC76F/DATA_KIRILL/BCCloose_1000_3/';
+pathtodata = '/media/algol/F2FE9B0BFE9AC76F/DATA_KIRILL/BCCclose_2000/';
 filename = 'input.dis';
 filenameData = 'ProjectionData.dis';
 
 % specify dimensions
-dimX = 1000;
-dimY = 1000;
-dimZ = 1000;
+dimX = 2000;
+dimY = 2000;
+dimZ = 2000;
 
 % Model parameters
 kV =  120;   % voltage
-p  =  900;   % number of projections
+p  =  round(1.2*dimX);   % number of projections
 nd =  round(sqrt(2)*dimX);   % detector pixels
 
-bins = 45:1:115; % the given energy range in KeV
+bins = 45:35:115; % the given energy range in KeV
 materials = {'SiO2'}; % basis materials
 
 % Fan-beam acquisition geometry (2D)
-N0 = 1e5;                % Photon flux (controls noise level)
 theta = (0:p-1)*360/p;   % projection angles
 dom_width   = 1.0;       % width of domain in cm
 src_to_rotc = 3.0;       % dist. from source to rotation center
-src_to_det  = 5.0;       % dist. from source to detector
+src_to_det  = 3.8;       % dist. from source to detector
 det_width   = 2.0;       % detector width
-nbins = length(bins)-1;  % number of energy bins
 
-% Generate source spectrum using Spektr
-s = N0*spektrNormalize(spektrSpectrum(kV));
+%%
+slices = 10;  % How many slices in data? Make it equal to dimZ for whole data
 
-Em = zeros(nbins,1);  % array for mean energy in bins
-sb = zeros(nbins,1);  % array for number of photons in each bin
-for k = 1:nbins
-    I = bins(k):(bins(k+1)-1);
-    sk = s(I);
-    Em(k) = I*sk/sum(sk);
-    sb(k) = sum(sk);
-end
-
-mat_density = 2.65; % for SiO2
-V = PhotonAttenuation(materials, Em*1e-3, 'mac');  % mass attenuation coef.
-Vl = V*diag(mat_density);
-
+factor_d = 1.0; % factor to downsample [ 0.0 > factor <= 1.0]
+dimX_down = round(dimX*factor_d);
+dimY_down = round(dimY*factor_d);
+vol_geom = astra_create_vol_geom(dimX_down,dimY_down);
+% Projection geometry (fan-beam)
+proj_geom= astra_create_proj_geom('fanflat', dimY_down*det_width/nd, nd, pi+(pi/180)*theta,dimY_down*src_to_rotc/dom_width, dimY_down*(src_to_det-src_to_rotc)/dom_width);
 %%
 % read projection data
 fid = fopen(strcat(pathtodata,filenameData),'rb');
+fileSaveRec = strcat('FBPrecon_', 'scale_', num2str(factor_d));
+fid_rec = fopen(strcat(pathtodata,fileSaveRec),'wb');
 
-Y = fread(fid, p*nd*nbins, 'single');
-Y =  single(Y);
-Y  = reshape(Y,p,nd,nbins);
-Y = -log(Y);
-fclose(fid);
-%%
-vol_geom = astra_create_vol_geom(dimX,dimY);
-
-% Projection geometry (fan-beam)
-proj_geom = astra_create_proj_geom('fanflat', dimY*det_width/nd, nd, pi+(pi/180)*theta,...
-    dimY*src_to_rotc/dom_width, dimY*(src_to_det-src_to_rotc)/dom_width);
-
-%%
 fprintf('%s \n', 'Reconstruction using FBP...');
 rec_id = astra_mex_data2d('create', '-vol', vol_geom);
 % Set up the parameters for a reconstruction algorithm using the GPU
@@ -73,12 +53,16 @@ cfg.ReconstructionDataId = rec_id;
 cfg.FilterType = 'hamming';
 cfg.FilterD = 0.8;
 
-X_FBP = zeros(dimX,dimY,nbins,'single');
+%
 % loop through each energy channel (use the previous recon as a prior)
-for kk=1:nbins    
-       
+for kk=1:slices    
+    Y = fread(fid, p*nd, 'single');
+    Y =  single(Y);
+    Y  = reshape(Y,p,nd);
+    Y = -log(Y);
+    
     % Create projection data object
-    proj_id = astra_mex_data2d('create', '-sino', proj_geom, Y(:,:,kk));
+    proj_id = astra_mex_data2d('create', '-sino', proj_geom, Y);
     cfg.ProjectionDataId = proj_id;
     
     % Create the algorithm object from the configuration structure
@@ -88,23 +72,27 @@ for kk=1:nbins
     astra_mex_algorithm('iterate', alg_id, 1);
     
     % Get the result
-    X_FBP(:,:,kk) = single(astra_mex_data2d('get', rec_id))*2.5e+05;    
+    %X_FBP(:,:,kk) = single(astra_mex_data2d('get', rec_id))*(dimX^2);    
+    X_FBP = single(astra_mex_data2d('get', rec_id))*(dimX^2);    
   
     % Clean up. Note that GPU memory is tied up in the algorithm object,
     % and main RAM in the data objects.
     astra_mex_algorithm('delete', alg_id);
     astra_mex_data2d('delete', proj_id);   
+    
+    fwrite(fid_rec, X_FBP, 'single');
 end  
 astra_mex_data2d('delete', rec_id);
+fclose(fid);
+fclose(fid_rec);
 
-%figure; imshow(X_FBP(:,:,5), [0 1]);
 %%
-% Display reconstructed images
-% figure(1); 
-% for k = 1:nbins
-%     subplot(10,7,k)
-%     imagesc(X_FBP(:,:,k),[0,1.0]);
-%     title(sprintf('%i-%i',bins(k),bins(k+1)))
-% end
+% read reconstructions:
+% fid = fopen(strcat(pathtodata,fileSaveRec),'rb');
+% X_FBP = fread(fid, dimX_down*dimY_down*slices, 'single');
+% X_FBP =  single(X_FBP);
+% X_FBP  = reshape(X_FBP,dimX_down,dimY_down,slices);
+% fclose(fid);
+% figure; imshow(X_FBP(:,:,2), [0 10]);
 %%
 
