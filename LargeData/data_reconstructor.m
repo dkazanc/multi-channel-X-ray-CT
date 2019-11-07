@@ -1,5 +1,7 @@
 close all;clc;clear;
 
+GPU = 'off'; % set to 'on' to use GPU acceleration for ASTRA
+
 % adding paths to packages
 addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep], 1i));
 addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'spektr' filesep], 1i));
@@ -31,7 +33,7 @@ src_to_det  = 3.8;       % dist. from source to detector
 det_width   = 2.0;       % detector width
 
 %%
-slices = 10;  % How many slices in data? Make it equal to dimZ for whole data
+slices = 1;  % How many slices in data? Make it equal to dimZ for whole data
 
 factor_d = 1.0; % factor to downsample [ 0.0 > factor <= 1.0]
 dimX_down = round(dimX*factor_d);
@@ -39,6 +41,10 @@ dimY_down = round(dimY*factor_d);
 vol_geom = astra_create_vol_geom(dimX_down,dimY_down);
 % Projection geometry (fan-beam)
 proj_geom= astra_create_proj_geom('fanflat', dimY_down*det_width/nd, nd, pi+(pi/180)*theta,dimY_down*src_to_rotc/dom_width, dimY_down*(src_to_det-src_to_rotc)/dom_width);
+% Projection geometry (fan-beam) 
+ if (strcmp(GPU,'off') == 1)
+     proj_id = astra_create_projector('strip_fanflat', proj_geom, vol_geom);
+ end
 %%
 % read projection data
 fid = fopen(strcat(pathtodata,filenameData),'rb');
@@ -46,9 +52,16 @@ fileSaveRec = strcat('FBPrecon_', 'scale_', num2str(factor_d));
 fid_rec = fopen(strcat(pathtodata,fileSaveRec),'wb');
 
 fprintf('%s \n', 'Reconstruction using FBP...');
-rec_id = astra_mex_data2d('create', '-vol', vol_geom);
-% Set up the parameters for a reconstruction algorithm using the GPU
-cfg = astra_struct('FBP_CUDA');
+
+if (strcmp(GPU,'off') == 1)
+    rec_id = astra_mex_data2d('create', '-vol', vol_geom, 0);
+    cfg = astra_struct('FBP');    
+else 
+    % Set up the parameters for a reconstruction algorithm using the GPU
+    rec_id = astra_mex_data2d('create', '-vol', vol_geom);
+    cfg = astra_struct('FBP_CUDA');
+end
+    
 cfg.ReconstructionDataId = rec_id;
 cfg.FilterType = 'hamming';
 cfg.FilterD = 0.8;
@@ -59,26 +72,34 @@ for kk=1:slices
     Y = fread(fid, p*nd, 'single');
     Y =  single(Y);
     Y  = reshape(Y,p,nd);
-    Y = -log(Y);
+    Y = -log(Y);    
+    
+    sinogram_id = astra_mex_data2d('create', '-sino', proj_geom, Y);
+    cfg.ProjectionDataId = sinogram_id;
     
     % Create projection data object
-    proj_id = astra_mex_data2d('create', '-sino', proj_geom, Y);
-    cfg.ProjectionDataId = proj_id;
+    if (strcmp(GPU,'off') == 1)        
+        cfg.ProjectorId = proj_id;   
+    end
     
     % Create the algorithm object from the configuration structure
-    alg_id = astra_mex_algorithm('create', cfg);
+    alg_id = astra_mex_algorithm('create', cfg);   
     
     % Run algorithm
     astra_mex_algorithm('iterate', alg_id, 1);
+    %astra_mex_algorithm('run', alg_id);
     
     % Get the result
     %X_FBP(:,:,kk) = single(astra_mex_data2d('get', rec_id))*(dimX^2);    
-    X_FBP = single(astra_mex_data2d('get', rec_id))*(dimX^2);    
+    X_FBP = single(astra_mex_data2d('get', rec_id));    
   
     % Clean up. Note that GPU memory is tied up in the algorithm object,
     % and main RAM in the data objects.
     astra_mex_algorithm('delete', alg_id);
-    astra_mex_data2d('delete', proj_id);   
+    if (strcmp(GPU,'off') == 1)   
+    astra_mex_data2d('delete', proj_id); 
+    end
+    astra_mex_data2d('delete', sinogram_id);     
     
     fwrite(fid_rec, X_FBP, 'single');
 end  

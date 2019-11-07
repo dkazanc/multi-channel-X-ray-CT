@@ -1,5 +1,7 @@
 close all;clc;clear;
 
+GPU = 'off'; % set to 'on' to use GPU acceleration for ASTRA
+
 % adding paths to packages
 addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep], 1i));
 addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'spektr' filesep], 1i));
@@ -53,15 +55,17 @@ Vl = V*diag(mat_density);
 % get projection data of a slice
 vol_geom = astra_create_vol_geom(dimX,dimY);
 
-% Projection geometry (fan-beam)
 proj_geom = astra_create_proj_geom('fanflat', dimY*det_width/nd, nd, pi+(pi/180)*theta,...
-    dimY*src_to_rotc/dom_width, dimY*(src_to_det-src_to_rotc)/dom_width);
-
+dimY*src_to_rotc/dom_width, dimY*(src_to_det-src_to_rotc)/dom_width);
+% Projection geometry (fan-beam) 
+if (strcmp(GPU,'off') == 1)
+    proj_id = astra_create_projector('line_fanflat', proj_geom, vol_geom);
+end
 
 fid_s = fopen(strcat(pathtodata,filenameData),'wb');
 fid = fopen(strcat(pathtodata,filename),'rb');  
 %%
-slices = 10; % % How many slices in data? Make it equal to dimZ for whole data
+slices = 2; % % How many slices in data? Make it equal to dimZ for whole data
 
 % Assuming the fan beam geometry the data will be read slice-by-slice
 for i = 1:slices  
@@ -70,7 +74,12 @@ for i = 1:slices
     slice2D =  single(slice2D);
     slice2D  = reshape(slice2D,dimX,dimY);
     
+    if (strcmp(GPU,'off') == 1)
+    [sinogram_id, sino] = astra_create_sino(slice2D, proj_id);
+    else
     [sinogram_id, sino] = astra_create_sino_cuda(slice2D, proj_geom, vol_geom);
+    end   
+    
     sino = sino*dom_width/(dimX);
     astra_mex_data2d('delete', sinogram_id);
     
@@ -94,6 +103,7 @@ fclose(fid);
 fclose(fid_s);
 %%
 
+%figure; imshow(Y_s, []);
 
 
 
