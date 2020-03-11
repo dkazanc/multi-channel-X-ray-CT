@@ -90,8 +90,10 @@ rng(100);
 for k = 1:nbins
     Ebin = bins(k):35:(bins(k+1)-1);
     [~,Vltmp] = geocore_phantom(dimY, Ebin);
-    Y(:,:,:,k) = Y(:,:,:,k) + poissrnd(exp(-(ProjData3D)*Vltmp(1))*s(Ebin));
-    Y(:,:,:,k) = single(Y(:,:,:,k)/sb(k));
+    for j = 1:dimZ
+    Y(:,:,j,k) = Y(:,:,j,k) + poissrnd(exp(-(ProjData3D(:,:,j))*Vltmp(1))*s(Ebin));
+    Y(:,:,j,k) = single(Y(:,:,j,k)/sb(k));
+    end
 end
 % summing over all energy bins
 Y_s = sum(Y,4);
