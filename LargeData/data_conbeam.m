@@ -13,7 +13,7 @@ filenameData = 'ProjectionData.dis';
 % specify dimensions
 dimX = 2000;
 dimY = 2000;
-dimZ = 15;
+dimZ = 10;
 
 % Model parameters
 kV =  120;   % voltage
@@ -102,54 +102,80 @@ figure; imshow(squeeze(Y(:,:,5)), []);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 disp('Reconstruction of cone beam data...');
-factor_down = 1.0; % change it to a smaller value for downsampled reconstruction
-dimX_newsize = round(dimX*factor_down);
-dimY_newsize = round(dimY*factor_down);
-dimZ_newsize = round(dimZ*factor_down);
+factor_min = 0.05; % the initial downsampling size
+factor_max = 1.0; % the max size (1.0 equals to the original size)
+downsample_num = 10; % the totalnumber of downsampling levels
+all_down_factors = linspace(factor_min, factor_max, downsample_num);
 
-vol_geom = astra_create_vol_geom(dimX_newsize, dimY_newsize, dimZ_newsize);
+for n = 1:downsample_num
+    factor = all_down_factors(n);    
+    dimX_newsize = round(dimX*factor);
+    dimY_newsize = round(dimY*factor);
+    dimZ_newsize = round(dimZ*factor);
 
-det_spacing_x_new = dimY_newsize*det_width/nd;
-det_spacing_y_new = dimX_newsize*det_width/nd;
-source_origin_new = dimY_newsize*src_to_rotc/dom_width;
-origin_det_new = dimY_newsize*(src_to_det-src_to_rotc)/dom_width;
+    vol_geom = astra_create_vol_geom(dimX_newsize, dimY_newsize, dimZ_newsize);
 
-% Projection geometry (cone-beam)
-proj_geom = astra_create_proj_geom('cone',  det_spacing_x_new, det_spacing_y_new, det_row_count, det_col_count, angles, source_origin_new, origin_det_new);
+    det_spacing_x_new = dimY_newsize*det_width/nd;
+    det_spacing_y_new = dimX_newsize*det_width/nd;
+    source_origin_new = dimY_newsize*src_to_rotc/dom_width;
+    origin_det_new = dimY_newsize*(src_to_det-src_to_rotc)/dom_width;
 
-cfg = astra_struct('FDK_CUDA');
-reconstruction_id = astra_mex_data3d('create', '-vol', vol_geom, 0.0);
-sinogram_id = astra_mex_data3d('create', '-sino', proj_geom, Y);
-cfg.ProjectionDataId = sinogram_id;
-cfg.ReconstructionDataId = reconstruction_id;
+    % Projection geometry (cone-beam)
+    proj_geom = astra_create_proj_geom('cone',  det_spacing_x_new, det_spacing_y_new, det_row_count, det_col_count, angles, source_origin_new, origin_det_new);
 
-alg_id = astra_mex_algorithm('create', cfg);       
-% Run algorithm
-astra_mex_algorithm('iterate', alg_id, 1);
-reconstr3D = single(astra_mex_data3d('get', reconstruction_id));  
-reconstr3D = reconstr3D*(0.5*dimX);
+    cfg = astra_struct('FDK_CUDA');
+    reconstruction_id = astra_mex_data3d('create', '-vol', vol_geom, 0.0);
+    sinogram_id = astra_mex_data3d('create', '-sino', proj_geom, Y);
+    cfg.ProjectionDataId = sinogram_id;
+    cfg.ReconstructionDataId = reconstruction_id;
 
-astra_mex_data3d('delete', sinogram_id);
-astra_mex_data3d('delete', alg_id);
-astra_mex_data3d('delete', reconstruction_id);
+    alg_id = astra_mex_algorithm('create', cfg);       
+    % Run algorithm
+    astra_mex_algorithm('iterate', alg_id, 1);
+    reconstr3D = single(astra_mex_data3d('get', reconstruction_id));  
+    reconstr3D = reconstr3D*(0.5*dimX);
 
-figure; imshow(reconstr3D(:,:,3), [0 2.0]);
-%%
-% Save generated 3D cone beam data into a file to reuse later on
-fid_s = fopen(strcat(pathtodata,filenameData),'wb');
-for i = 1:dimZ      
-    % save projection data
-    fwrite(fid_s, Y(:,:,i), 'single');
+    astra_mex_data3d('delete', sinogram_id);
+    astra_mex_data3d('delete', alg_id);
+    astra_mex_data3d('delete', reconstruction_id);
+    
+    % Save the reconstructed 3D data
+    filenameRecon = strcat('FDK_recon_',num2str(dimX_newsize),'_',num2str(dimY_newsize),'_', num2str(dimZ_newsize));
+    fid_s = fopen(strcat(pathtodata,filenameRecon),'wb');
+    for i = 1:dimZ_newsize      
+        % save projection data
+        fwrite(fid_s, reconstr3D(:,:,i), 'single');
+    end
+    fclose(fid_s);
 end
-fclose(fid_s);
+
+% figure; imshow(reconstr3D(:,:,3), [0 2.0]);
 %%
-% Save the reconstructed 3D data
-filenameRecon = strcat('FDK_recon_',num2str(dimX_newsize),'_',num2str(dimY_newsize),'_', num2str(dimZ_newsize));
-fid_s = fopen(strcat(pathtodata,filenameRecon),'wb');
-for i = 1:dimZ_newsize      
-    % save projection data
-    fwrite(fid_s, reconstr3D(:,:,i), 'single');
-end
-fclose(fid_s);
+% % Save generated 3D cone beam data into a file to reuse later on
+% fid_s = fopen(strcat(pathtodata,filenameData),'wb');
+% for i = 1:dimZ      
+%     % save projection data
+%     fwrite(fid_s, Y(:,:,i), 'single');
+% end
+% fclose(fid_s);
+%%
+% reading the reconstructed (saved) data
+% pathtodata = '/media/algol/F2FE9B0BFE9AC76F/DATA_KIRILL/BCCclose_2000/';
+% filename = 'FDK_recon_1050_1050_5';
+% dimX = 1050;
+% dimY = 1050;
+% dimZ = 5;
+% 
+% fid = fopen(strcat(pathtodata,filename),'rb');  
+% vol3D = zeros(dimX,dimY,dimZ,'single');
+% 
+% for i = 1:dimZ  
+%     
+%     slice2D = fread(fid, dimX*dimY, 'single');
+%     slice2D =  single(slice2D);
+%     slice2D  = reshape(slice2D,dimX,dimY);
+%     vol3D(:,:,i) = slice2D;
+% end
+% fclose(fid);
 %%
 
