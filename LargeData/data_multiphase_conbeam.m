@@ -6,30 +6,63 @@ addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'spektr' filesep],
 addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'spot' filesep], 1i));
 addpath(sprintf(['..' filesep 'SupplementaryPackages' filesep 'PhotonAttenuation' filesep], 1i));
 
-pathtodata = '/media/algol/F2FE9B0BFE9AC76F/DATA_KIRILL/';
-filename = 'seg3d5phases.raw';
+pathtodata = '/home/algol/Documents/MATLAB/multi-channel-X-ray-CT/LargeData/';
+filename = 'original_1000.raw';
 filenameData = 'ProjectionData.dis';
 
+%specify materials
+materials = {'Air','Al2Si2O5OH4', 'SiO2', 'NaAlSi3O8', 'FeS2'}; % basis materials
+materials_num = length(materials);
+mat_density = [0.1 1.3 2.32 2.65 7.8600]; % nominal densities 
+
 % specify dimensions
-dimX = 200;
-dimY = 200;
-dimZ = 200;
+dimX = 1000;
+dimY = 1000;
+dimZ = 10;
+dimX_pad = 1200;
+dimY_pad = 1200;
+dimZ_pad = 10;
+padZ = (dimZ_pad - dimZ)/2;
+
+Vol4D = zeros(dimX_pad, dimY_pad, dimZ_pad, materials_num,'single');
+disp('Loading the whole volume into the memory...');
+
+for j = 1:materials_num
+    fid = fopen(strcat(pathtodata,filename),'rb');  
+    for i = padZ+1:(dimZ_pad-padZ)
+        slice2D = fread(fid, dimX*dimY, 'uint8');
+        slice2D =  single(slice2D);
+        slice2D  = reshape(slice2D,dimX,dimY);
+        findMat = find(slice2D == j-1);
+        tempSlice = zeros(dimX, dimY, 'single');
+        tempSlice(findMat) = 1;
+        if (j == 0) 
+            Vol4D(:,:,i,j) = padarray(tempSlice,[100 100],1);
+        else
+            Vol4D(:,:,i,j) = padarray(tempSlice,[100 100],0);
+        end
+    end
+    fclose(fid);
+end
+
+dimX = dimX_pad;
+dimY = dimY_pad;
+dimZ = dimZ_pad;
 
 % Model parameters
 kV =  120;   % voltage
-p  =  round(1.2*dimX);   % number of projections
+p  =  round(1.6*dimX);   % number of projections
 nd =  round(sqrt(2)*dimX);   % detector pixels
 
-bins = 35:40:115; % the given energy range in KeV
-materials = {'Al2Si2O5OH4', 'SiO2', 'NaAlSi3O8', 'FeS2'}; % basis materials
-
-% Fan-beam acquisition geometry (2D)
+% Cone-beam acquisition geometry (3D)
 N0 = 5e5;                % Photon flux (controls noise level)
 theta = (0:p-1)*360/p;   % projection angles
 dom_width   = 1.0;       % width of domain in cm
-src_to_rotc = 3.0;       % dist. from source to rotation center
+src_to_rotc = 4.0;       % dist. from source to rotation center
 src_to_det  = 3.8;       % dist. from source to detector
 det_width   = 2.0;       % detector width
+
+bins = 20:2:115; % the given energy range in KeV
 nbins = length(bins)-1;  % number of energy bins
 
 % Generate source spectrum using Spektr
@@ -44,30 +77,9 @@ for k = 1:nbins
     sb(k) = sum(sk);
 end
 
-mat_density = [2.6941 2.32 0.9690 7.8600]; % nominal densities
-V = PhotonAttenuation(materials, Em*1e-3, 'mac');  % mass attenuation coef.
-Vl = V*diag(mat_density);
 %%
-disp('Loading the whole volume into the memory...');
-materials_num = length(materials);
-Vol4D = zeros(dimX, dimY, dimZ, materials_num,'single');
-
-for j = 1:materials_num
-    fid = fopen(strcat(pathtodata,filename),'rb');  
-    for i = 1:dimZ
-        slice2D = fread(fid, dimX*dimY, 'uint8');
-        slice2D =  single(slice2D);
-        slice2D  = reshape(slice2D,dimX,dimY);
-        findMat = find(slice2D == j);
-        tempSlice = zeros(dimX, dimY, 'single');
-        tempSlice(findMat) = 1;
-        Vol4D(:,:,i,j) = tempSlice;
-    end
-    fclose(fid);
-end
-
-figure (1);
-sliceN = 20; 
+figure(1);
+sliceN = 3; 
 subplot(1,4,1); imshow(Vol4D(:,:,sliceN,1), []); title('First phase');
 subplot(1,4,2); imshow(Vol4D(:,:,sliceN,2), []); title('Second phase');
 subplot(1,4,3); imshow(Vol4D(:,:,sliceN,3), []); title('Third');
@@ -83,7 +95,6 @@ det_col_count = nd;
 angles = theta*(pi/180);
 source_origin = dimY*src_to_rotc/dom_width;
 origin_det = dimY*(src_to_det-src_to_rotc)/dom_width;
-
 proj_geom = astra_create_proj_geom('cone',  det_spacing_x, det_spacing_y, det_row_count, det_col_count, angles, source_origin, origin_det);
 
 disp('Generating projection data...');
@@ -92,13 +103,13 @@ ProjData4D = zeros(det_col_count, length(angles), dimZ, materials_num, 'single')
 for k = 1:materials_num
 [sino_id, ProjData3D] = astra_create_sino3d_cuda(Vol4D(:,:,:,k), proj_geom, vol_geom);
 astra_mex_data3d('delete', sino_id);
-ProjData3D = single(ProjData3D)/(dimX*5);
+ProjData3D = single(ProjData3D)/(dimX);
 ProjData4D(:,:,:,k) = ProjData3D;
 clear ProjData3D;    
 end
 
 figure (2);
-sliceN = 20; 
+sliceN = 3; 
 subplot(1,4,1); imshow(ProjData4D(:,:,sliceN,1), []); title('First phase');
 subplot(1,4,2); imshow(ProjData4D(:,:,sliceN,2), []); title('Second phase');
 subplot(1,4,3); imshow(ProjData4D(:,:,sliceN,3), []); title('Third');
@@ -109,10 +120,11 @@ Y = zeros(det_col_count, length(angles), dimZ, nbins, 'single');
 rng(100);
 
 for k = 1:nbins
-    Ebin = bins(k):40:(bins(k+1)-1);
-    [~,Vltmp] = geocore_phantom(dimY, Ebin);
+    Ebin = bins(k):(bins(k+1)-1);  
+    V = PhotonAttenuation(materials, Ebin*1e-3, 'mac');  % mass attenuation coef.
+    Vltmp = V*diag(mat_density);    
     for j = 1:dimZ
-    proj_resh = reshape(ProjData4D(:,:,j,:),det_col_count*length(angles), 4);
+    proj_resh = reshape(ProjData4D(:,:,j,:),det_col_count*length(angles), materials_num);
     pois_res = poissrnd(exp(-proj_resh*Vltmp')*s(Ebin));
     pois_res = reshape(pois_res,det_col_count,length(angles));    
     Y(:,:,j,k) = pois_res;
@@ -121,18 +133,15 @@ for k = 1:nbins
 end
 % summing over all energy bins
 Y_s = sum(Y,4);
-Y = -log(Y_s);
+Y = -log(Y_s/max(Y_s(:)));
 max(Y(:))
-figure; imshow(squeeze(Y(:,:,100)), []);
+figure(3); imshow(squeeze(Y(:,:,3)), []);
 clear Y_s ProjData4D pois_res;
-% figure; imshow(squeeze(Y(:,:,5)), []);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 disp('Reconstruction of cone beam data...');
-factor_min = 0.05; % the initial downsampling size
-factor_max = 1.0; % the max size (1.0 equals to the original size)
-downsample_num = 1; % the totalnumber of downsampling levels
-all_down_factors = linspace(factor_min, factor_max, downsample_num);
+all_down_factors = [0.1 , 0.125, 0.2  , 0.25 , 0.5  , 1.];
+downsample_num = length(all_down_factors);
 
 for n = 1:downsample_num
     factor = all_down_factors(n);    
@@ -176,7 +185,7 @@ for n = 1:downsample_num
     fclose(fid_s);
 end
 
-figure; imshow(reconstr3D(:,:,10), [ ]);
+figure; imshow(reconstr3D(:,:,1), [0.0 0.8]);
 %%
 % % Save generated 3D cone beam data into a file to reuse later on
 % fid_s = fopen(strcat(pathtodata,filenameData),'wb');
@@ -205,4 +214,3 @@ figure; imshow(reconstr3D(:,:,10), [ ]);
 % end
 % fclose(fid);
 %%
-
