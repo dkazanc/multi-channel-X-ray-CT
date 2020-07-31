@@ -25,27 +25,27 @@ pathtodata = '/home/algol/Documents/MATLAB/multi-channel-X-ray-CT/LargeData/';
 filename = 'original_1000.raw';
 filenameData = 'ProjectionData.dis';
 
-Vol4D = zeros(dimX_pad, dimY_pad, dimZ_pad, materials_num,'single');
-disp('Loading the whole volume into the memory...');
-for j = 1:materials_num
-    fid = fopen(strcat(pathtodata,filename),'rb');  
-    for i = padZ+1:(dimZ_pad-padZ)
-        slice2D = fread(fid, dimX*dimY, 'uint8');
-        slice2D =  single(slice2D);
-        slice2D  = reshape(slice2D,dimX,dimY);
-        findMat = find(slice2D == j-1);
-        tempSlice = zeros(dimX, dimY, 'single');
-        tempSlice(findMat) = 1;
-        if (j == 0) 
-            Vol4D(:,:,i,j) = padarray(tempSlice,[100 100],1);
-        else
-            Vol4D(:,:,i,j) = padarray(tempSlice,[100 100],0);
-        end
-    end
-    fclose(fid);
-end
+% Vol4D = zeros(dimX_pad, dimY_pad, dimZ_pad, materials_num,'single');
+% disp('Loading the whole volume into the memory...');
+% for j = 1:materials_num
+%     fid = fopen(strcat(pathtodata,filename),'rb');  
+%     for i = padZ+1:(dimZ_pad-padZ)
+%         slice2D = fread(fid, dimX*dimY, 'uint8');
+%         slice2D =  single(slice2D);
+%         slice2D  = reshape(slice2D,dimX,dimY);
+%         findMat = find(slice2D == j-1);
+%         tempSlice = zeros(dimX, dimY, 'single');
+%         tempSlice(findMat) = 1;
+%         if (j == 0) 
+%             Vol4D(:,:,i,j) = padarray(tempSlice,[100 100],1);
+%         else
+%             Vol4D(:,:,i,j) = padarray(tempSlice,[100 100],0);
+%         end
+%     end
+%     fclose(fid);
+% end
 
-%load('vol4d_5materials.mat'); % load the data
+load('vol4d_5materials.mat'); % load the data
 
 dimX = dimX_pad;
 dimY = dimY_pad;
@@ -159,7 +159,7 @@ for n = 1:downsample_num
 
     cfg = astra_struct('FDK_CUDA');
     reconstruction_id = astra_mex_data3d('create', '-vol', vol_geom, 0.0);
-    sinogram_id = astra_mex_data3d('create', '-sino', proj_geom, Y_s);
+    sinogram_id = astra_mex_data3d('create', '-sino', proj_geom, Y);
     cfg.ProjectionDataId = sinogram_id;
     cfg.ReconstructionDataId = reconstruction_id;
 
@@ -183,7 +183,7 @@ for n = 1:downsample_num
 %     fclose(fid_s);
 end
 
-figure; imshow(reconstr3D(:,:,2), [0.0 0.8]);
+figure; imshow(reconstr3D(:,:,2), [0.0 1.5]);
 %%
 % % Save generated 3D cone beam data into a file to reuse later on
 % fid_s = fopen(strcat(pathtodata,filenameData),'wb');
